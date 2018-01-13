@@ -4,7 +4,8 @@ Homey Mode Switch
 Written by Peter EIER, based on HomeyDruino sample sketches.
 
 Version History
-v1.0 -  Januari 2018
+v1.0 -    Januari-2018 - Initial release
+v1.1 - 14-Januari-2018 - Added support for a Homey action (send command to the Nextion display from a Homey flow)
 */
 
 #include <ESP8266WiFi.h>
@@ -39,7 +40,7 @@ void setup() {
   //The ESP8266 has only 1 serial port which is used for the Nextion display!! No serial terminal debugging posible for that reason!!
 
   //Connect to network
-  WiFi.begin("<your ssid>", "<your ssid password>");
+  WiFi.begin("your ssid", "your password");
   while (WiFi.status() != WL_CONNECTED) { delay(500); }
 
   //Start Homey library
@@ -51,6 +52,18 @@ void setup() {
      desire it to be.
   */
 
+  //Register Mode Switch Status Change action
+  Homey.addAction("StatusChange", onStatusAction);
+  /* Note:
+   *  Names of actions and conditions can be at most 16 characters long.
+   *  Names of both actions and conditions have to be unique on this device,
+   *  which means that there can not be a condition and an action with the
+   *  same name on the same device.
+   *  
+   *  An action is a function which returnes 'void'. While a condition is a function
+   *  which returns a boolean ('bool').
+   */
+   
    // Nextion display initialization
    nexInit();
    hot0.attachPush(hot0PushCallback, &hot0); // AtHome
@@ -143,3 +156,31 @@ void hot4PushCallback(void *ptr)
     hotspotid = 99;
     int hid = Homey.trigger("hotspotid", hotspotid);      
 }
+
+void onStatusAction() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  if (value == "page 0") { sendCommand("page 0"); } // Start
+  if (value == "page 1") { sendCommand("page 1"); } // Away    
+  if (value == "page 2") { sendCommand("page 2"); } // Vacation
+  if (value == "page 3") { sendCommand("page 3"); } // @Home
+  if (value == "page 4") { sendCommand("page 4"); } // Night Mode
+      
+  /* Note:
+   *  
+   *  The argument will always be received as a String.
+   *  If you sent a number or boolean from homey then you can convert
+   *  the value into the type you want as follows:
+   *  
+   *   - Integer number: "int value = Homey.value.toInt();"
+   *   - Floating point number: "float value = Homey.value.toFloat();"
+   *   - Boolean: "bool value = Homey.value.toInt();"
+   *   - String: "String value = Homey.value;"
+   *  
+   * In case something goes wrong while executing your action
+   * you can return an error to the Homey flow by calling
+   * Homey.returnError("<message>");
+   */
+}
+
