@@ -5,7 +5,9 @@ Written by Peter EIER, based on HomeyDruino sample sketches.
 
 Version History
 v1.0 -    Januari-2018 - Initial release
-v1.1 - 14-Januari-2018 - Added support for a Homey action (send command to the Nextion display from a Homey flow)
+v1.1 - 14-Januari-2018 - Added support for a Homey action (send Homey action to the sketch/Nextion display from a flow)
+v1.2 - 14-Januari-2018 - Added support for a Homey conditions (send Homey condition to the sketch/Nextion display from a flow)
+                         IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
 */
 
 #include <ESP8266WiFi.h>
@@ -31,6 +33,7 @@ NexTouch *nex_listen_list[] =               // Register the objects in event lis
 };
 
 int hotspotid = 99;                         // 99 means undefined, please set mode!
+uint8_t number = 999;                       // will store the Nextion page number
 
 //Nextion LCD subroutines
 //see subroutine section below the main loop of the sketch
@@ -52,8 +55,16 @@ void setup() {
      desire it to be.
   */
 
-  //Register Mode Switch Status Change action
+  //Register Mode Switch action
   Homey.addAction("StatusChange", onStatusAction);
+  
+   //Register Mode Switch condition
+  Homey.addCondition("HomeSet", onHomeCond);
+  Homey.addCondition("AwaySet", onAwayCond);
+  Homey.addCondition("NightSet", onNightCond);
+  Homey.addCondition("VacationSet", onVacationCond);         
+  Homey.addCondition("NoModeWasSet", onNotSetCond); 
+  
   /* Note:
    *  Names of actions and conditions can be at most 16 characters long.
    *  Names of both actions and conditions have to be unique on this device,
@@ -90,8 +101,11 @@ void loop() {
    */
 }
 
-
+//***********************************
 //******* Subroutine section ********
+//***********************************
+
+//Nextion subroutines
 void hot0PushCallback(void *ptr)
 {
     dbSerialPrintln("hot0PushCallback");
@@ -157,6 +171,8 @@ void hot4PushCallback(void *ptr)
     int hid = Homey.trigger("hotspotid", hotspotid);      
 }
 
+
+//Homeydruino subroutines
 void onStatusAction() {
   //Read the argument sent from the homey flow
   String value = Homey.value;
@@ -182,5 +198,89 @@ void onStatusAction() {
    * you can return an error to the Homey flow by calling
    * Homey.returnError("<message>");
    */
+}
+
+void onHomeCond() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  bool result = false;
+  
+  //Check if AtHome page displayed
+  if (value == "true") {
+    // IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
+    sendCurrentPageId(&number); // call the method to get the page number.
+    if (number == 3) { result = true; }
+  }
+  
+  //Return the result to the Homey flow
+  return Homey.returnResult(result);
+}
+
+void onAwayCond() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  bool result = false;
+  
+  //Check if Away page displayed 
+  if (value == "true") {
+    // IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
+    sendCurrentPageId(&number); // call the method to get the page number.
+    if (number == 1) { result = true; }
+  }
+  //Return the result to the Homey flow
+  return Homey.returnResult(result);
+}
+
+void onNightCond() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  bool result = false;
+
+  //Check if Night Mode page displayed
+  if (value == "true") {
+    // IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
+    sendCurrentPageId(&number); // call the method to get the page number.
+    if (number == 4) { result = true; }
+  }
+
+  //Return the result to the Homey flow
+  return Homey.returnResult(result);
+}
+
+void onVacationCond() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  bool result = false;
+
+  //Check if Vacation page displayed
+  if (value == "true") {
+    // IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
+    sendCurrentPageId(&number); // call the method to get the page number.
+    if (number == 2) { result = true; }
+  }
+
+  //Return the result to the Homey flow
+  return Homey.returnResult(result);
+}
+
+void onNotSetCond() {
+  //Read the argument sent from the homey flow
+  String value = Homey.value;
+
+  bool result = false;
+  
+  //Check if mode selection page displayed
+  if (value == "true") {
+    // IMPORTANT NOTE read this: http://support.iteadstudio.com/support/discussions/topics/11000001697
+    sendCurrentPageId(&number); // call the method to get the page number.
+    if (number == 0) { result = true; }
+  }
+  
+  //Return the result to the Homey flow
+  return Homey.returnResult(result);
 }
 
